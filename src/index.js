@@ -1,10 +1,10 @@
-function component() {
-    let element = document.createElement('div');
+import React from "react";
+import ReactDOM from "react-dom";
+import PhotosPage from "./pages/photos/photos";
 
-    // Lodash, currently included via a script, is required for this line to work
-    element.innerHTML = _.join(['Hello', 'webpack'], ' ');
+const App = () => {
+    return <PhotosPage />;
+};
 
-    return element;
-}
 
-document.body.appendChild(component());
+ReactDOM.render(<App />, document.getElementById("root"));
