@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import giphy from "../../data/giphy/giphy";
+import { PHOTO_KEYWORDS } from "../../constants/constants";
 
 class PhotoWall extends Component {
     constructor() {
@@ -7,15 +8,16 @@ class PhotoWall extends Component {
     }
 
     componentDidMount() {
-        giphy().search('gifs', {"q": "cats"})
-            .then((response) => {
-                response.data.forEach((gifObject) => {
-                    console.log(gifObject)
-                })
-            })
-            .catch((err) => {
-                console.log("Need to handle error");
-            })
+        giphy().search('gifs', {
+            "q": Math.floor( Math.random() * PHOTO_KEYWORDS.length )
+        }).then((response) => {
+            response.data.forEach((gifObject) => {
+                console.log(gifObject)
+            });
+        })
+        .catch((err) => {
+            console.log("Need to handle error");
+        })
     }
 
     render() {
