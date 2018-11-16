@@ -1,7 +1,7 @@
 export const PHOTO_KEYWORDS  = [
-    'too much coffee',
-    'super star',
-    'puppies',
-    'sad sea turtles',
-    'chocolate'
+    'Too Much Coffee',
+    'Super Star',
+    'Puppies',
+    'Sad Sea Turtles',
+    'Chocolate',
 ];
