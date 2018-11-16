@@ -3,7 +3,7 @@ import giphy from "../../data/giphy/giphy";
 import { PHOTO_KEYWORDS } from "../../constants/constants";
 import Photo from '../photo/photo';
 import uniqueID from 'lodash/uniqueId';
-import { List } from 'react-virtualized';
+import { InfiniteLoader, List } from 'react-virtualized';
 
 class PhotoWall extends Component {
     constructor() {
@@ -14,28 +14,23 @@ class PhotoWall extends Component {
             searchWord: PHOTO_KEYWORDS[ Math.floor( Math.random() * PHOTO_KEYWORDS.length )],
         };
 
-        this.page = 0;
-        this.currentlyLoading = false;
-        this.wantsToLoadMore = false;
-
         this.loadMoreGiphys = this.loadMoreGiphys.bind(this);
-        this.loadMoreGiphys();
+        this.isRowLoaded = this.isRowLoaded.bind(this);
     }
 
-    loadMoreGiphys() {
-        // Prevent Loading Multiple Requests
-        if (this.currentlyLoading) {
-            this.wantsToLoadMore = true;
-            return;
-        }
+    componentDidMount() {
+        this.loadMoreGiphys( {
+            startIndex: 0
+        })
+    }
 
-        console.log("Attempt: " + this.page * 100);
+    loadMoreGiphys({ startIndex }) {
+        console.log("HIT " + startIndex);
 
-        this.currentlyLoading = true;
-        giphy().search('gifs', {
+        return giphy().search('gifs', {
             "q": this.state.searchWord,
             limit: 100,
-            offset: this.page * 100,
+            offset: startIndex,
         }).then((response) => {
             const photos = response.data.map((photo) => {
                 const giphyImageData = photo.images['fixed_height_small'];
@@ -47,58 +42,50 @@ class PhotoWall extends Component {
                 };
             });
 
-            console.log("LOADED " + this.page * 100);
-            this.page += 1;
-
-            this.setState({ photos: this.state.photos.concat(photos) });
-        })
-        .catch((err) => {
-            this.currentlyLoading = false;
-
-            this.setState({ photos: this.state.photos.concat([]) }); // hack to update infinite loader
-            console.log("Error " + this.page * 100);
-            console.log(err);
-        }).finally(() => {
-            console.log("FINALLY");
-            this.currentlyLoading = false;
-
-            if (this.wantsToLoadMore) {
-                this.wantsToLoadMore = false;
-                this.loadMoreGiphys();
-            }
+            this.setState({
+                photos: [ ...this.state.photos, ...photos]
+            });
         });
     }
 
-    render() {
-        const photos = this.state.photos.map((photo) => {
-           return  <Photo
-                key={ photo.id }
-                image={ photo.url }
-                height={ photo.height }
-                width={ photo.width }
-            />
-        });
+    isRowLoaded({ index }) {
+        return !!this.state.photos[index];
+    }
 
+    render() {
+        // Since row count is exactly 1 more row, Infinite Loader will try to load more images when a user
+        // scrolls to the last image in the list.
+        const rowCount = this.state.photos.length + 1;
         return (
             <div>
                 <h1>{ this.state.searchWord }</h1>
-                <List
-                    rowCount={ photos.length }
-                    width={ 300 }
-                    height={ 400 }
-                    rowHeight={ 100 }
-                    rowRenderer={
-                        (props) => {
-                            const photoData = this.state.photos[props.index];
+                <InfiniteLoader
+                    isRowLoaded={this.isRowLoaded}
+                    loadMoreRows={this.loadMoreGiphys}
+                    rowCount={rowCount}
+                >
+                    {({ onRowsRendered, registerChild }) => (
+                        <List
+                            width={ 300 }
+                            height={ 400 }
+                            onRowsRendered={onRowsRendered}
+                            ref={registerChild}
+                            rowCount={rowCount}
+                            rowHeight={ 100 }
+                            rowRenderer={
+                                (props) => {
+                                    const photoData = this.state.photos[props.index];
 
-                            return <Photo
-                                key={ props.key }
-                                image={ photoData.url }
-                                style={ props.style }
-                            />;
-                        }
-                    }
-                />
+                                    return <Photo
+                                        key={ props.key }
+                                        image={ photoData && photoData.url }
+                                        style={ { ...props.style, width: photoData && photoData.width } }
+                                    />;
+                                }
+                            }
+                        />
+                    )}
+                </InfiniteLoader>
             </div>
         )
     }
