@@ -24,7 +24,9 @@
   },
   "dependencies": {
     "giphy-js-sdk-core": "^1.0.6",
+    "lodash": "^4.17.11",
     "react": "^16.6.3",
-    "react-dom": "^16.6.3"
+    "react-dom": "^16.6.3",
+    "react-infinite-scroller": "^1.2.2"
   }
 }
