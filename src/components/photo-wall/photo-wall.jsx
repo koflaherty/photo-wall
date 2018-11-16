@@ -4,6 +4,7 @@ import { PHOTO_KEYWORDS } from "../../constants/constants";
 import Photo from '../photo/photo';
 import uniqueID from 'lodash/uniqueId';
 import { InfiniteLoader, List } from 'react-virtualized';
+import PropTypes from 'prop-types';
 
 class PhotoWall extends Component {
     constructor() {
@@ -15,7 +16,6 @@ class PhotoWall extends Component {
         };
 
         this.loadMoreGiphys = this.loadMoreGiphys.bind(this);
-        this.isRowLoaded = this.isRowLoaded.bind(this);
     }
 
     componentDidMount() {
@@ -25,13 +25,13 @@ class PhotoWall extends Component {
     }
 
     loadMoreGiphys({ startIndex }) {
-        console.log("HIT " + startIndex);
-
+        console.log("LOAD MORE")
         return giphy().search('gifs', {
             "q": this.state.searchWord,
             limit: 100,
             offset: startIndex,
         }).then((response) => {
+            console.log("LOADed MORE")
             const photos = response.data.map((photo) => {
                 const giphyImageData = photo.images['fixed_height_small'];
                 return {
@@ -48,39 +48,82 @@ class PhotoWall extends Component {
         });
     }
 
-    isRowLoaded({ index }) {
-        return !!this.state.photos[index];
+    getPhotoRows() {
+        const photoRows = [];
+        let nextRow = [];
+        let currentRowWidth = 0;
+
+        console.log("PHOTO COUNT " + this.state.photos.length);
+        this.state.photos.forEach((photo) => {
+            if (photo.width + currentRowWidth > this.props.width) {
+                if (nextRow.length === 0) {
+                    nextRow.push(photo);
+                }
+
+                photoRows.push(nextRow);
+                nextRow = [];
+                currentRowWidth = 0;
+            }
+            else {
+                nextRow.push(photo);
+                currentRowWidth += photo.width;
+            }
+        });
+
+        if (nextRow.length > 0) {
+            photoRows.push(nextRow);
+            nextRow = [];
+            currentRowWidth = 0;
+        }
+
+        return photoRows;
     }
 
     render() {
-        // Since row count is exactly 1 more row, Infinite Loader will try to load more images when a user
-        // scrolls to the last image in the list.
-        const rowCount = this.state.photos.length + 1;
+        const { width, height } = this.props;
+
+        const photoRows = this.getPhotoRows();
+        const isRowLoaded = ({ index }) => {
+            return !!photoRows[index];
+        };
+
+        // Since row count is one extra row, Infinite Loader will try to load more images when a
+        // user scrolls to the bottom of the page.
+        const rowCount = photoRows.length + 20;
+        console.log("rowCount" + rowCount);
         return (
             <div>
                 <h1>{ this.state.searchWord }</h1>
                 <InfiniteLoader
-                    isRowLoaded={this.isRowLoaded}
+                    isRowLoaded={isRowLoaded}
                     loadMoreRows={this.loadMoreGiphys}
                     rowCount={rowCount}
                 >
                     {({ onRowsRendered, registerChild }) => (
                         <List
-                            width={ 300 }
-                            height={ 400 }
+                            width={ width }
+                            height={ height }
                             onRowsRendered={onRowsRendered}
                             ref={registerChild}
                             rowCount={rowCount}
                             rowHeight={ 100 }
                             rowRenderer={
                                 (props) => {
-                                    const photoData = this.state.photos[props.index];
+                                    let photos;
+                                    if (photoRows && photoRows[props.index]) {
+                                        photos = photoRows && photoRows[props.index].map((photo) => {
+                                            return <Photo
+                                                key={ photo.id }
+                                                image={ photo.url }
+                                            />;
+                                        });
+                                    }
 
-                                    return <Photo
-                                        key={ props.key }
-                                        image={ photoData && photoData.url }
-                                        style={ { ...props.style, width: photoData && photoData.width } }
-                                    />;
+                                    return (
+                                        <div key={ props.key } style={ props.style }>
+                                            { photos }
+                                        </div>
+                                    );
                                 }
                             }
                         />
@@ -90,5 +133,10 @@ class PhotoWall extends Component {
         )
     }
 }
+
+PhotoWall.propTypes = {
+    height: PropTypes.number.isRequired,
+    width: PropTypes.number.isRequired,
+};
 
 export default PhotoWall;
