@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import giphy from "../../data/giphy/giphy";
 import { PHOTO_KEYWORDS } from "../../constants/constants";
 import Photo from '../photo/photo';
-import InfiniteScroll from 'react-infinite-scroller';
 import uniqueID from 'lodash/uniqueId';
+import { List } from 'react-virtualized';
 
 class PhotoWall extends Component {
     constructor() {
@@ -19,6 +19,7 @@ class PhotoWall extends Component {
         this.wantsToLoadMore = false;
 
         this.loadMoreGiphys = this.loadMoreGiphys.bind(this);
+        this.loadMoreGiphys();
     }
 
     loadMoreGiphys() {
@@ -41,7 +42,7 @@ class PhotoWall extends Component {
                 return {
                     id: uniqueID('giphy'),
                     url: giphyImageData.url,
-                    height: Number(giphyImageData.height),
+                    height: 100,
                     width: Number(giphyImageData.width),
                 };
             });
@@ -81,15 +82,23 @@ class PhotoWall extends Component {
         return (
             <div>
                 <h1>{ this.state.searchWord }</h1>
-                <InfiniteScroll
-                    hasMore={true}
-                    loadMore={this.loadMoreGiphys}
-                    loader={<div className="loader">Loading ...</div>}
-                    threshold={100}
-                    style={ { minHeight: '100vh'} }
-                >
-                    { photos }
-                </InfiniteScroll>
+                <List
+                    rowCount={ photos.length }
+                    width={ 300 }
+                    height={ 400 }
+                    rowHeight={ 100 }
+                    rowRenderer={
+                        (props) => {
+                            const photoData = this.state.photos[props.index];
+
+                            return <Photo
+                                key={ props.key }
+                                image={ photoData.url }
+                                style={ props.style }
+                            />;
+                        }
+                    }
+                />
             </div>
         )
     }
