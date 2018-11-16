@@ -1,3 +1,4 @@
+import './style.scss';
 import React from "react";
 import ReactDOM from "react-dom";
 import PhotosPage from "./pages/photos/photos";

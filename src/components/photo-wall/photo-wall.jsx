@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import giphy from "../../data/giphy/giphy";
-import { PHOTO_KEYWORDS } from "../../constants/constants";
 import Photo from '../photo/photo';
 import uniqueID from 'lodash/uniqueId';
 import { InfiniteLoader, List } from 'react-virtualized';
@@ -12,26 +11,26 @@ class PhotoWall extends Component {
 
         this.state = {
             photos: [],
-            searchWord: PHOTO_KEYWORDS[ Math.floor( Math.random() * PHOTO_KEYWORDS.length )],
         };
+
+        // Need to keep track the number of fetched photos because InfiniteLoader can call loadMoreRows more than
+        // once before promise resolves and its internal rowIndex doesn't map directly to number of images since
+        // there isn't a set number of images per row.
+        this.numberFetchedPhotos = 0;
 
         this.loadMoreGiphys = this.loadMoreGiphys.bind(this);
     }
 
-    componentDidMount() {
-        this.loadMoreGiphys( {
-            startIndex: 0
-        })
-    }
+    loadMoreGiphys() {
+        const limit = 100;
+        const offset = this.numberFetchedPhotos;
+        this.numberFetchedPhotos += limit;
 
-    loadMoreGiphys({ startIndex }) {
-        console.log("LOAD MORE")
         return giphy().search('gifs', {
-            "q": this.state.searchWord,
-            limit: 100,
-            offset: startIndex,
+            "q": this.props.searchKeyword,
+            limit,
+            offset,
         }).then((response) => {
-            console.log("LOADed MORE")
             const photos = response.data.map((photo) => {
                 const giphyImageData = photo.images['fixed_height_small'];
                 return {
@@ -49,13 +48,15 @@ class PhotoWall extends Component {
     }
 
     getPhotoRows() {
+        const { width, imagePadding } = this.props;
+
+        const individualImagePadding = imagePadding / 2;
         const photoRows = [];
         let nextRow = [];
         let currentRowWidth = 0;
-
-        console.log("PHOTO COUNT " + this.state.photos.length);
         this.state.photos.forEach((photo) => {
-            if (photo.width + currentRowWidth > this.props.width) {
+            const photoWidth = individualImagePadding + photo.width;
+            if (photoWidth + currentRowWidth  > width) {
                 if (nextRow.length === 0) {
                     nextRow.push(photo);
                 }
@@ -66,7 +67,7 @@ class PhotoWall extends Component {
             }
             else {
                 nextRow.push(photo);
-                currentRowWidth += photo.width;
+                currentRowWidth += photoWidth;
             }
         });
 
@@ -80,7 +81,7 @@ class PhotoWall extends Component {
     }
 
     render() {
-        const { width, height } = this.props;
+        const { width, height, imagePadding } = this.props;
 
         const photoRows = this.getPhotoRows();
         const isRowLoaded = ({ index }) => {
@@ -89,47 +90,46 @@ class PhotoWall extends Component {
 
         // Since row count is one extra row, Infinite Loader will try to load more images when a
         // user scrolls to the bottom of the page.
-        const rowCount = photoRows.length + 20;
-        console.log("rowCount" + rowCount);
-        return (
-            <div>
-                <h1>{ this.state.searchWord }</h1>
-                <InfiniteLoader
-                    isRowLoaded={isRowLoaded}
-                    loadMoreRows={this.loadMoreGiphys}
-                    rowCount={rowCount}
-                >
-                    {({ onRowsRendered, registerChild }) => (
-                        <List
-                            width={ width }
-                            height={ height }
-                            onRowsRendered={onRowsRendered}
-                            ref={registerChild}
-                            rowCount={rowCount}
-                            rowHeight={ 100 }
-                            rowRenderer={
-                                (props) => {
-                                    let photos;
-                                    if (photoRows && photoRows[props.index]) {
-                                        photos = photoRows && photoRows[props.index].map((photo) => {
-                                            return <Photo
-                                                key={ photo.id }
-                                                image={ photo.url }
-                                            />;
-                                        });
-                                    }
+        const rowCount = photoRows.length + 1;
 
-                                    return (
-                                        <div key={ props.key } style={ props.style }>
-                                            { photos }
-                                        </div>
-                                    );
+        return (
+            <InfiniteLoader
+                isRowLoaded={isRowLoaded}
+                loadMoreRows={this.loadMoreGiphys}
+                rowCount={rowCount}
+            >
+                {({ onRowsRendered, registerChild }) => (
+                    <List
+                        className="photo-wall"
+                        width={ width }
+                        height={ height }
+                        onRowsRendered={onRowsRendered}
+                        ref={registerChild}
+                        rowCount={rowCount}
+                        rowHeight={ 100 + imagePadding }
+                        rowRenderer={
+                            (props) => {
+                                let photos;
+                                if (photoRows && photoRows[props.index]) {
+                                    photos = photoRows && photoRows[props.index].map((photo) => {
+                                        return <Photo
+                                            key={ photo.id }
+                                            image={ photo.url }
+                                            style={ { width: photo.width, height: 100, margin: `0 ${this.props.imagePadding / 2}px` } }
+                                        />;
+                                    });
                                 }
+
+                                return (
+                                    <div className="photo-wall__row" key={ props.key } style={ props.style }>
+                                        { photos }
+                                    </div>
+                                );
                             }
-                        />
-                    )}
-                </InfiniteLoader>
-            </div>
+                        }
+                    />
+                )}
+            </InfiniteLoader>
         )
     }
 }
@@ -137,6 +137,12 @@ class PhotoWall extends Component {
 PhotoWall.propTypes = {
     height: PropTypes.number.isRequired,
     width: PropTypes.number.isRequired,
+    imagePadding: PropTypes.number,
+    searchKeyword: PropTypes.string.isRequired,
+};
+
+PhotoWall.defaultProps = {
+    imagePadding: 6,
 };
 
 export default PhotoWall;

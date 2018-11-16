@@ -1,0 +1,10 @@
+// component styles
+@import 'components/photo-wall/photo-wall.scss';
+@import 'components/photo/photo.scss';
+
+// page styles
+@import "pages/photos/photos";
+
+body {
+  margin: 0;
+}
