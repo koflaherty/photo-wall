@@ -10,6 +10,7 @@ class PhotoWall extends Component {
         super();
 
         this.state = {
+            error: false,
             photos: [],
         };
 
@@ -19,6 +20,7 @@ class PhotoWall extends Component {
         this.numberFetchedPhotos = 0;
 
         this.loadMoreGiphys = this.loadMoreGiphys.bind(this);
+        this.updateErrorState = this.updateErrorState.bind(this);
     }
 
     loadMoreGiphys() {
@@ -44,9 +46,27 @@ class PhotoWall extends Component {
             this.setState({
                 photos: [ ...this.state.photos, ...photos]
             });
+
+            this.updateErrorState(false); // reset any previous error since Giphy is now working again
+        }).catch((error) => {
+            console.warn(error.message);
+            this.updateErrorState(true);
         });
     }
 
+    updateErrorState(error) {
+        if (error !== this.state.error) {
+            if (this.props.handleErrorChange) {
+                this.props.handleErrorChange(error);
+            }
+        }
+
+        this.setState({
+            error
+        });
+    }
+
+    // Performance Improvement - only process this if photos or photo wall width has changed
     getPhotoRows() {
         const { width, imagePadding } = this.props;
 
@@ -97,6 +117,7 @@ class PhotoWall extends Component {
                 isRowLoaded={isRowLoaded}
                 loadMoreRows={this.loadMoreGiphys}
                 rowCount={rowCount}
+                threshold={5}
             >
                 {({ onRowsRendered, registerChild }) => (
                     <List
@@ -139,6 +160,7 @@ PhotoWall.propTypes = {
     width: PropTypes.number.isRequired,
     imagePadding: PropTypes.number,
     searchKeyword: PropTypes.string.isRequired,
+    handleErrorChange: PropTypes.func,
 };
 
 PhotoWall.defaultProps = {

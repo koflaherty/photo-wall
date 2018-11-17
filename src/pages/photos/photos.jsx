@@ -7,11 +7,13 @@ class PhotosPage extends Component {
         super();
 
         this.state = {
+            photoWallError: false,
             windowWidth: 0,
             windowHeight: 0,
             searchKeyword: PHOTO_KEYWORDS[ Math.floor( Math.random() * PHOTO_KEYWORDS.length )],
         };
 
+        this.handlePhotoWallError = this.handlePhotoWallError.bind(this);
         this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
     }
 
@@ -28,6 +30,12 @@ class PhotosPage extends Component {
         this.setState({ windowWidth: window.innerWidth, windowHeight: window.innerHeight });
     }
 
+    handlePhotoWallError(photoWallError) {
+        this.setState({
+            photoWallError
+        });
+    }
+
     render() {
         if (this.state.windowWidth === 0) {
             return null;
@@ -35,11 +43,18 @@ class PhotosPage extends Component {
 
         return (
             <div style={ { position: 'relative' } }>
-                <h1 className="search-title" >{ this.state.searchKeyword }</h1>
+                <div className="floating-content">
+                    <h1 className="search-title" >{ this.state.searchKeyword }</h1>
+                    {
+                        this.state.photoWallError &&
+                        <p className="error-message">There was an error loading images from Giphy</p>
+                    }
+                </div>
                 <PhotoWall
                     height={this.state.windowHeight}
                     width={this.state.windowWidth}
                     searchKeyword={this.state.searchKeyword}
+                    handleErrorChange={this.handlePhotoWallError}
                 />
             </div>
         );
