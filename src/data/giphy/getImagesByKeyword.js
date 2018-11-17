@@ -1,5 +1,7 @@
 import GphApiClient from "giphy-js-sdk-core";
-const client = GphApiClient("7RvkMW9s8zgW4j38YgQfYe8g6EYShhYX");
+import { GIPHY_API_KEY } from "../../constants/constants";
+
+const client = GphApiClient(GIPHY_API_KEY);
 console.log("Need to remove API key from codebase");
 
 export default function(keyword, offset = 0, limit = 100) {
