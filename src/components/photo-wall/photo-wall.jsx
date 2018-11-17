@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import giphy from "../../data/giphy/giphy";
+import getImagesByKeyword from "../../data/giphy/getImagesByKeyword";
 import Photo from '../photo/photo';
 import uniqueID from 'lodash/uniqueId';
 import { InfiniteLoader, List } from 'react-virtualized';
@@ -28,11 +28,7 @@ class PhotoWall extends Component {
         const offset = this.numberFetchedPhotos;
         this.numberFetchedPhotos += limit;
 
-        return giphy().search('gifs', {
-            "q": this.props.searchKeyword,
-            limit,
-            offset,
-        }).then((response) => {
+        return getImagesByKeyword(this.props.searchKeyword, offset).then((response) => {
             const photos = response.data.map((photo) => {
                 const giphyImageData = photo.images['fixed_height_small'];
                 return {
